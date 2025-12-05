@@ -20,15 +20,17 @@ savage_prompt = ChatPromptTemplate.from_messages([
     ("human", "{topic}")
 ])
 
-
+# chaining 
 polite_chain = polite_prompt | llm | StrOutputParser()
 savage_chain = savage_prompt | llm | StrOutputParser()
 
+# parallelism
 map_chain = RunnableParallel(
     polite=polite_chain,
     savage=savage_chain
 )
 
+# invoking
 topic = "Was ist der Sinn des Lebens?"
 result = map_chain.invoke({"topic":topic})
 pprint(result)
