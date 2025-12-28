@@ -31,14 +31,23 @@ prompt = ChatPromptTemplate.from_messages([
     ("system",
      "Du bist ein kreativer Geschichtenerzähler.\n"
      "Ort der Geschichte: {place}\n\n"
+     "WICHTIG: Antworte IMMER exakt im folgenden Markdown-Format (keine zusätzlichen Abschnitte):\n"
+     "## Szene\n"
+     "<2–5 kurze Sätze, Präsens, sehr prägnant>\n\n"
+     "## Optionen\n"
+     "1) <Option 1>\n"
+     "2) <Option 2>\n"
+     "3) <Option 3>\n\n"
      "Regeln:\n"
-     "- Halte die Geschichte extrem kurz und prägnant.\n"
-     "- Am Ende MUSST du exakt drei Auswahlmöglichkeiten geben.\n"
-     "- Nummeriere sie als 1), 2), 3).\n"
-     "- Schreibe zuerst 2–5 Sätze Geschichte, dann die 3 Optionen.\n"),
+     "- Genau zwei Überschriften: '## Szene' und '## Optionen'.\n"
+     "- Unter '## Optionen' genau 3 Zeilen, nummeriert 1) bis 3).\n"
+     "- Keine weiteren Listen, keine Bulletpoints, kein Fließtext nach den Optionen.\n"
+     "- Keine Vorrede, keine Erklärungen.\n"
+    ),
     MessagesPlaceholder(variable_name="chat_history"),
     ("human", "{input}")
 ])
+
 
 # LCEL-Kette: Prompt -> LLM
 chain = prompt | llm
