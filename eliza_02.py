@@ -1,6 +1,8 @@
 from dotenv import load_dotenv
 from rich.console import Console
 from rich.markdown import Markdown
+from rich.panel import Panel
+from rich.text import Text
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -25,6 +27,59 @@ def get_session_history(session_id: str) -> BaseChatMessageHistory:
     return store[session_id]
 
 # ------------------------------------------------------------
+# Schöne Darstellung der Ausgabe
+# -----------------------------------------------------------
+def render_story(markdown_text: str) -> None:
+    """
+    Erwartet das feste Markdown-Format:
+    ## Szene
+    ...
+    ## Optionen
+    1) ...
+    2) ...
+    3) ...
+    """
+    text = markdown_text.strip()
+
+    # Sehr robustes Splitten an der Überschrift "## Optionen"
+    if "## Optionen" in text:
+        scene_part, options_part = text.split("## Optionen", 1)
+    else:
+        scene_part, options_part = text, ""
+
+    # "## Szene" entfernen (falls vorhanden)
+    scene_part = scene_part.replace("## Szene", "", 1).strip()
+    options_part = options_part.strip()
+
+    # Szene-Panel
+    console.print(
+        Panel(
+            Markdown(scene_part) if scene_part else Text("(keine Szene gefunden)"),
+            title="Szene",
+            expand=False,
+        )
+    )
+
+    # Optionen-Panel
+    if options_part:
+        console.print(
+            Panel(
+                Markdown(options_part),
+                title="Optionen",
+                expand=False,
+            )
+        )
+    else:
+        console.print(
+            Panel(
+                Text("(keine Optionen gefunden)"),
+                title="Optionen",
+                expand=False,
+            )
+        )
+
+
+# ------------------------------------------------------------
 # Prompt: WICHTIG ist der MessagesPlaceholder für chat_history
 # ------------------------------------------------------------
 prompt = ChatPromptTemplate.from_messages([
@@ -43,6 +98,7 @@ prompt = ChatPromptTemplate.from_messages([
      "- Unter '## Optionen' genau 3 Zeilen, nummeriert 1) bis 3).\n"
      "- Keine weiteren Listen, keine Bulletpoints, kein Fließtext nach den Optionen.\n"
      "- Keine Vorrede, keine Erklärungen.\n"
+     "- Der Prodagonist wird immer in der Du-Form erwähnt.\n"
     ),
     MessagesPlaceholder(variable_name="chat_history"),
     ("human", "{input}")
@@ -74,7 +130,8 @@ start = game.invoke(
     {"place": place, "input": "Eröffne die Abenteuergeschichte mit einer Startszene."},
     config=config
 )
-console.print(Markdown(start.content))
+#console.print(Markdown(start.content))
+render_story(start.content)
 
 # ------------------------------------------------------------
 # Loop: Spielerwahlen
@@ -88,7 +145,8 @@ while True:
         {"place": place, "input": f"Meine Wahl ist: {player_choice}. Setze die Geschichte fort."},
         config=config
     )
-    console.print(Markdown(response.content))
+    # console.print(Markdown(response.content))
+    render_story(response.content)
 
 # Optional: Debug (zeigt dir, was wirklich in der History liegt)
 history = get_session_history(session_id)
