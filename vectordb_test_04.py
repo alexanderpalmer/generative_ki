@@ -1,34 +1,43 @@
-"""
-Dieses Beispiel lädt aus Wikipedia einige Dokumente
-"""
-from langchain_community.document_loaders import GutenbergLoader
+import os
+from langchain_community.document_loaders import TextLoader, DirectoryLoader
+from pprint import pprint
+from langchain_text_splitters import CharacterTextSplitter
 
-# Details zum Buch
-book_details = {
-    'title': 'The Adventures of Sherlock Holmes',
-    'author': 'Arthur Conan Doyle',
-    'year': 1892,
-    'language':'English',
-    'genre':'Detective Fiction',
-    'url':'https://www.gutenberg.org/cache/epub/1661/pg1661.txt' 
-}
+import seaborn as sns
+import matplotlib.pylab as plt
 
-loader = GutenbergLoader(book_details.get('url'))
-data = loader.load()
+# Beschaffen des aktuellen Arbeitsverzeichnisses
+file_path = os.path.abspath(__file__)
+current_dir = os.path.dirname(file_path)
 
-text = data[0].page_content
+# Wechsel ins Verzeichnis data, relativ vom Arbeitsverzeichnis
+text_files_path = os.path.join(current_dir, "data")
 
-start_marker = '*** START OF THE PROJECT GUTENBERG EBOOK'
-end_marker = '*** END OF THE PROJECT GUTENBERG EBOOK'
+# Lade alle Dateien im definierten Verzeichnis
+dir_loader = DirectoryLoader(path=text_files_path, glob="**/*.txt", 
+                             loader_cls=TextLoader,
+                             loader_kwargs={'encoding':'utf-8'}) 
+docs = dir_loader.load()
 
-start_idx = text.find(start_marker)
-end_idx   = text.find(end_marker)
+splitter = CharacterTextSplitter(
+    chunk_size=256,
+    chunk_overlap=50,
+    separator=" "
+)
 
-if start_idx == -1 or end_idx == -1:
-    raise ValueError("START/END Marker nicht gefunden – Format evtl. anders.")
+docs_chunks = splitter.split_documents(docs)
+print(len(docs_chunks))
 
-# Ab dem Ende der START-Zeile schneiden
-start_line_end = text.find("\n", start_idx)
-book_text = text[start_line_end+1 : end_idx].strip()
+pprint(docs_chunks[100].page_content)
+pprint(docs_chunks[101].page_content)
 
-print(book_text[:1500])
+chunk_lengths = [len(chunk.page_content) for chunk in docs_chunks]
+
+sns.histplot(chunk_lengths, bins=50, binrange=(100, 300))
+# Titel hinzufügen
+plt.title("Verteilung der Chunk-Grössen")
+# Beschriftung der x-Achse
+plt.xlabel("Anzahl der Zeichen")
+# Beschriftung der y-Achse
+plt.ylabel("Anzahl der Chunks")
+plt.show()
